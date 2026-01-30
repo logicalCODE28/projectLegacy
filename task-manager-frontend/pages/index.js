@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import Head from 'next/head'
+import { API_URL } from '../lib/api'
 
 const defaultTab = 'tasks'
 
@@ -35,9 +36,9 @@ export default function Home() {
   const refreshAll = async () => {
     try {
       const [u, p, t] = await Promise.all([
-        fetch('/api/users').then(r => r.json()),
-        fetch('/api/projects').then(r => r.json()),
-        fetch('/api/tasks').then(r => r.json())
+        fetch(`${API_URL}/api/users`).then(r => r.json()),
+        fetch(`${API_URL}/api/projects`).then(r => r.json()),
+        fetch(`${API_URL}/api/tasks`).then(r => r.json())
       ])
       setUsers(u); setProjects(p); setTasks(t);
     } catch (e) { }
@@ -66,19 +67,19 @@ export default function Home() {
 
   // Handlers
   const addTask = async (payload) => {
-    const r = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    const r = await fetch(`${API_URL}/api/tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     if (r.ok) { await refreshAll(); alert('Tarea agregada'); setTab('tasks'); setSelectedTask(null); }
     else { const e = await r.text(); alert('Error: ' + e) }
   }
 
   const updateTask = async (id, payload) => {
-    const r = await fetch('/api/tasks/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const r = await fetch(`${API_URL}/api/tasks/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (r.ok) { alert('Tarea actualizada'); await refreshAll(); setSelectedTask(null); } else { alert('Error al actualizar') }
   }
 
   const deleteTask = async (id) => {
     if (!confirm('Eliminar tarea?')) return;
-    const r = await fetch('/api/tasks/' + id, { method: 'DELETE' });
+    const r = await fetch(`${API_URL}/api/tasks/${id}`, { method: 'DELETE' });
     if (r.ok) { alert('Tarea eliminada'); await refreshAll(); setSelectedTask(null); } else alert('Error al eliminar')
   }
 
@@ -87,14 +88,14 @@ export default function Home() {
     const raw = document.getElementById('commentTaskId').value; const text = document.getElementById('commentText').value;
     if (!raw || !text) return alert('ID y texto requeridos');
     const taskId = resolveTaskId(raw)
-    const r = await fetch('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId, userId: (currentUser && (currentUser.id || currentUser._id)) || '', commentText: text }) });
+    const r = await fetch(`${API_URL}/api/comments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ taskId, userId: (currentUser && (currentUser.id || currentUser._id)) || '', commentText: text }) });
     if (r.ok) { alert('Comentario agregado'); document.getElementById('commentText').value = ''; await loadComments(); } else alert('Error');
   }
 
   const loadComments = async () => {
     const raw = document.getElementById('commentTaskId').value; if (!raw) return alert('ID requerido');
     const taskId = resolveTaskId(raw)
-    const r = await fetch('/api/comments/task/' + taskId);
+    const r = await fetch(`${API_URL}/api/comments/task/${taskId}`);
     if (r.ok) { const list = await r.json(); setComments(list.reverse()); setCommentsPage(1); } else alert('Error al cargar');
   }
 
@@ -108,24 +109,37 @@ export default function Home() {
   const loadHistory = async () => {
     const raw = document.getElementById('historyTaskId').value; if (!raw) return alert('ID requerido');
     const taskId = resolveTaskId(raw)
-    const r = await fetch('/api/history/task/' + taskId);
+    const r = await fetch(`${API_URL}/api/history/task/${taskId}`);
     if (r.ok) { const list = await r.json(); resetHistoryDisplay(list.reverse()); }
   }
 
   const loadAllHistory = async () => {
-    const r = await fetch('/api/history'); if (r.ok) { const list = await r.json(); resetHistoryDisplay(list.slice(-100).reverse()); }
+    const r = await fetch(`${API_URL}/api/history`); if (r.ok) { const list = await r.json(); resetHistoryDisplay(list.slice(-100).reverse()); }
   }
 
   // Notifications
   const loadNotifications = async () => {
     if (!currentUser) return alert('Login requerido');
-    const id = currentUser.id || currentUser._id; const r = await fetch('/api/notifications/user/' + id + '/unread');
-    if (r.ok) { const list = await r.json(); setOutput(list.map(n => `[${new Date(n.createdAt).toLocaleString()}] [${n.type}] ${n.message}`).join('\n')); } else alert('Error');
+    const id = currentUser.id || currentUser._id;
+
+    // Load unread notifications
+    const unreadRes = await fetch(`${API_URL}/api/notifications/user/${id}/unread`);
+    if (unreadRes.ok) {
+      const unreadList = await unreadRes.json();
+      setNotifications(unreadList);
+    }
+
+    // Load all notifications for the toggle feature
+    const allRes = await fetch(`${API_URL}/api/notifications/user/${id}`);
+    if (allRes.ok) {
+      const allList = await allRes.json();
+      setAllNotifications(allList);
+    }
   }
 
   const markNotificationsRead = async () => {
     if (!currentUser) return alert('Login requerido');
-    const id = currentUser.id || currentUser._id; const r = await fetch('/api/notifications/user/' + id + '/markread', { method: 'POST' });
+    const id = currentUser.id || currentUser._id; const r = await fetch(`${API_URL}/api/notifications/user/${id}/markread`, { method: 'POST' });
     if (r.ok) { alert('Marcadas como leídas'); setOutput(''); } else alert('Error');
   }
 
@@ -133,7 +147,7 @@ export default function Home() {
   const searchTasks = async () => {
     const q = document.getElementById('searchText').value; const status = document.getElementById('searchStatus').value; const priority = document.getElementById('searchPriority').value; const projectId = document.getElementById('searchProject').value;
     const params = new URLSearchParams(); if (q) params.set('q', q); if (status) params.set('status', status); if (priority) params.set('priority', priority); if (projectId) params.set('projectId', projectId);
-    const r = await fetch('/api/tasks/search?' + params.toString());
+    const r = await fetch(`${API_URL}/api/tasks/search?${params.toString()}`);
     if (r.ok) {
       const list = await r.json();
       setSearchResults(list);
@@ -144,18 +158,18 @@ export default function Home() {
 
   // Reports
   const reportTasks = async () => {
-    const r = await fetch('/api/reports/tasks-by-status');
+    const r = await fetch(`${API_URL}/api/reports/tasks-by-status`);
     if (r.ok) { const j = await r.json(); setReportData(Object.entries(j).map(([label, value]) => ({ label: `${label} (Tareas)`, value }))) }
   }
   const reportProjects = async () => {
-    const r = await fetch('/api/reports/projects-count');
+    const r = await fetch(`${API_URL}/api/reports/projects-count`);
     if (r.ok) { const j = await r.json(); setReportData(Object.entries(j).map(([label, value]) => ({ label, value: `${value} tareas` }))) }
   }
   const reportUsers = async () => {
-    const r = await fetch('/api/reports/users-count');
+    const r = await fetch(`${API_URL}/api/reports/users-count`);
     if (r.ok) { const j = await r.json(); setReportData(Object.entries(j).map(([label, value]) => ({ label, value: `${value} tareas` }))) }
   }
-  const exportCsv = async () => { const r = await fetch('/api/reports/export/tasks/csv'); if (r.ok) { const blob = await r.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'export_tasks.csv'; a.click(); URL.revokeObjectURL(url); } }
+  const exportCsv = async () => { const r = await fetch(`${API_URL}/api/reports/export/tasks/csv`); if (r.ok) { const blob = await r.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'export_tasks.csv'; a.click(); URL.revokeObjectURL(url); } }
 
   // Simple renderers for each legacy section
   return (
@@ -276,8 +290,8 @@ export default function Home() {
                       <div className="form-group"><label>Nombre</label><input id="projectName" className="modern-input" placeholder="Ej: Rediseño UI" /></div>
                       <div className="form-group"><label>Descripción</label><textarea id="projectDesc" className="modern-input" placeholder="Descripción del proyecto..." /></div>
                       <div className="form-actions">
-                        <button className="btn-modern btn-primary" onClick={async () => { const name = document.getElementById('projectName').value; const desc = document.getElementById('projectDesc').value; if (!name) return alert('Nombre requerido'); const r = await fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, description: desc }) }); if (r.ok) { alert('Agregado'); await refreshAll(); } }}>Agregar</button>
-                        <button className="btn-modern btn-secondary" onClick={async () => { const name = document.getElementById('projectName').value; if (!name) return alert('Selecciona'); const p = projects.find(x => x.name === name); if (!p) return alert('No encontrado'); const desc = document.getElementById('projectDesc').value; const id = p._id || p.id; const r = await fetch('/api/projects/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, description: desc }) }); if (r.ok) { alert('Actualizado'); await refreshAll(); } }}>Actualizar</button>
+                        <button className="btn-modern btn-primary" onClick={async () => { const name = document.getElementById('projectName').value; const desc = document.getElementById('projectDesc').value; if (!name) return alert('Nombre requerido'); const r = await fetch(`${API_URL}/api/projects`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, description: desc }) }); if (r.ok) { alert('Agregado'); await refreshAll(); } }}>Agregar</button>
+                        <button className="btn-modern btn-secondary" onClick={async () => { const name = document.getElementById('projectName').value; if (!name) return alert('Selecciona'); const p = projects.find(x => x.name === name); if (!p) return alert('No encontrado'); const desc = document.getElementById('projectDesc').value; const id = p._id || p.id; const r = await fetch(`${API_URL}/api/projects/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, description: desc }) }); if (r.ok) { alert('Actualizado'); await refreshAll(); } }}>Actualizar</button>
                       </div>
                     </div>
                     <div className="glass-card panel-list">
@@ -954,7 +968,7 @@ function LoginView({ onLogin }) {
     if (!username || !password) return alert('Campos obligatorios');
     setLoading(true);
     try {
-      const r = await fetch('/api/users');
+      const r = await fetch(`${API_URL}/api/users`);
       const list = await r.json();
       const found = list.find(u => u.username === username && u.password === password);
       setTimeout(() => {

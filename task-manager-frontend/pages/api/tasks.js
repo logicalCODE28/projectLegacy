@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  const backend = process.env.BACKEND_URL || 'http://localhost:5000';
+  const backend = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
 
   try {
     // forward the full path (supports /api/tasks, /api/tasks/search, /api/tasks/:id)

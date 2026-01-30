@@ -1,5 +1,5 @@
 export default async function handler(req, res) {
-  const backend = process.env.BACKEND_URL || 'http://localhost:5000';
+  const backend = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL;
   try {
     const target = `${backend}/api/notifications${req.url.replace('/api/notifications','')}`
     const opts = {
