@@ -17,6 +17,8 @@ export default function Home() {
   const [historyPage, setHistoryPage] = useState(1)
   const [searchPage, setSearchPage] = useState(1)
   const [commentsPage, setCommentsPage] = useState(1)
+  const [historyDateFrom, setHistoryDateFrom] = useState('')
+  const [historyDateTo, setHistoryDateTo] = useState('')
   const itemsPerPage = 5
 
   useEffect(() => {
@@ -357,64 +359,110 @@ export default function Home() {
                       <button className="btn-modern btn-secondary" onClick={loadAllHistory}>Ver Todo</button>
                     </div>
 
-                    <div className="history-feed mt-4">
-                      {historyItems.length > 0 ? (
-                        <>
-                          {historyItems.slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage).map((h, i) => (
-                            <div key={h._id || h.id || i} className="history-card glass">
-                              <div className="history-header">
-                                <div className="history-info">
-                                  <span className="history-action">{h.action}</span>
-                                  <span className="history-user">por {users.find(u => u.id === h.userId || u._id === h.userId)?.username || 'Desconocido'}</span>
-                                </div>
-                                <span className="history-date">{new Date(h.timestamp).toLocaleString()}</span>
-                              </div>
-                              <div className="history-details">
-                                <div className="detail-item">
-                                  <span className="label">Anterior:</span>
-                                  <span className="value old">{h.oldValue || '(vacío)'}</span>
-                                </div>
-                                <div className="detail-item">
-                                  <span className="label">Nuevo:</span>
-                                  <span className="value new">{h.newValue || '(vacío)'}</span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-
-                          {/* Pagination Controls */}
-                          {historyItems.length > itemsPerPage && (
-                            <div className="pagination-bar mt-6">
-                              <button
-                                className="btn-modern btn-secondary btn-sm"
-                                onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
-                                disabled={historyPage === 1}
-                              >
-                                ← Anterior
-                              </button>
-                              <div className="page-indicator">
-                                {Array.from({ length: Math.ceil(historyItems.length / itemsPerPage) }).map((_, i) => (
-                                  <button
-                                    key={i}
-                                    className={`page-dot ${historyPage === i + 1 ? 'active' : ''}`}
-                                    onClick={() => setHistoryPage(i + 1)}
-                                  />
-                                ))}
-                                <span className="page-text">Página {historyPage} de {Math.ceil(historyItems.length / itemsPerPage)}</span>
-                              </div>
-                              <button
-                                className="btn-modern btn-secondary btn-sm"
-                                onClick={() => setHistoryPage(p => Math.min(Math.ceil(historyItems.length / itemsPerPage), p + 1))}
-                                disabled={historyPage === Math.ceil(historyItems.length / itemsPerPage)}
-                              >
-                                Siguiente →
-                              </button>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="empty-state">No hay registros de historial disponibles.</div>
+                    {/* Date Filter */}
+                    <div className="history-filters mt-4">
+                      <div className="filter-group">
+                        <label>Desde</label>
+                        <input
+                          type="date"
+                          className="modern-input"
+                          value={historyDateFrom}
+                          onChange={e => { setHistoryDateFrom(e.target.value); setHistoryPage(1); }}
+                        />
+                      </div>
+                      <div className="filter-group">
+                        <label>Hasta</label>
+                        <input
+                          type="date"
+                          className="modern-input"
+                          value={historyDateTo}
+                          onChange={e => { setHistoryDateTo(e.target.value); setHistoryPage(1); }}
+                        />
+                      </div>
+                      {(historyDateFrom || historyDateTo) && (
+                        <button
+                          className="btn-modern btn-secondary btn-sm"
+                          onClick={() => { setHistoryDateFrom(''); setHistoryDateTo(''); setHistoryPage(1); }}
+                        >
+                          Limpiar Filtros
+                        </button>
                       )}
+                    </div>
+
+                    <div className="history-feed mt-4">
+                      {(() => {
+                        // Apply date filtering
+                        let filteredHistory = historyItems;
+                        if (historyDateFrom || historyDateTo) {
+                          filteredHistory = historyItems.filter(h => {
+                            const itemDate = new Date(h.timestamp);
+                            const fromDate = historyDateFrom ? new Date(historyDateFrom) : null;
+                            const toDate = historyDateTo ? new Date(historyDateTo + 'T23:59:59') : null;
+
+                            if (fromDate && itemDate < fromDate) return false;
+                            if (toDate && itemDate > toDate) return false;
+                            return true;
+                          });
+                        }
+
+                        return filteredHistory.length > 0 ? (
+                          <>
+                            {filteredHistory.slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage).map((h, i) => (
+                              <div key={h._id || h.id || i} className="history-card glass">
+                                <div className="history-header">
+                                  <div className="history-info">
+                                    <span className="history-action">{h.action}</span>
+                                    <span className="history-user">por {users.find(u => u.id === h.userId || u._id === h.userId)?.username || 'Desconocido'}</span>
+                                  </div>
+                                  <span className="history-date">{new Date(h.timestamp).toLocaleString()}</span>
+                                </div>
+                                <div className="history-details">
+                                  <div className="detail-item">
+                                    <span className="label">Anterior:</span>
+                                    <span className="value old">{h.oldValue || '(vacío)'}</span>
+                                  </div>
+                                  <div className="detail-item">
+                                    <span className="label">Nuevo:</span>
+                                    <span className="value new">{h.newValue || '(vacío)'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+
+                            {/* Pagination Controls */}
+                            {filteredHistory.length > itemsPerPage && (
+                              <div className="pagination-bar mt-6">
+                                <button
+                                  className="btn-modern btn-secondary btn-sm"
+                                  onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                                  disabled={historyPage === 1}
+                                >
+                                  ← Anterior
+                                </button>
+                                <div className="page-indicator">
+                                  {Array.from({ length: Math.ceil(filteredHistory.length / itemsPerPage) }).map((_, i) => (
+                                    <button
+                                      key={i}
+                                      className={`page-dot ${historyPage === i + 1 ? 'active' : ''}`}
+                                      onClick={() => setHistoryPage(i + 1)}
+                                    />
+                                  ))}
+                                  <span className="page-text">Página {historyPage} de {Math.ceil(filteredHistory.length / itemsPerPage)}</span>
+                                </div>
+                                <button
+                                  className="btn-modern btn-secondary btn-sm"
+                                  onClick={() => setHistoryPage(p => Math.min(Math.ceil(filteredHistory.length / itemsPerPage), p + 1))}
+                                  disabled={historyPage === Math.ceil(filteredHistory.length / itemsPerPage)}
+                                >
+                                  Siguiente →
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="empty-state">No hay registros de historial disponibles.</div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -633,6 +681,10 @@ export default function Home() {
         .detail-item .value { font-size: 13px; padding: 8px; border-radius: 6px; background: rgba(0,0,0,0.2); }
         .detail-item .value.old { color: #f87171; border-left: 3px solid #f87171; }
         .detail-item .value.new { color: #4ade80; border-left: 3px solid #4ade80; }
+
+        .history-filters { display: flex; gap: 12px; align-items: flex-end; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid var(--glass-border); }
+        .filter-group { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+        .filter-group label { font-size: 11px; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; }
 
         .pagination-bar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid var(--glass-border); }
         .page-indicator { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center; }
