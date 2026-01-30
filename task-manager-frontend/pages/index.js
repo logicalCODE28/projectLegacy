@@ -144,275 +144,281 @@ export default function Home() {
     <div className="layout">
       <Head><title>Task Manager Pro</title></Head>
 
-      {/* Sidebar navigation */}
-      <aside className="sidebar glass">
-        <div className="sidebar-brand heading-font">TM Pro</div>
-        <nav className="sidebar-nav">
-          <button className={`nav-item ${tab === 'tasks' ? 'active' : ''}`} onClick={() => setTab('tasks')}>
-            <span className="icon">📋</span> Tareas
-          </button>
-          <button className={`nav-item ${tab === 'projects' ? 'active' : ''}`} onClick={() => setTab('projects')}>
-            <span className="icon">📁</span> Proyectos
-          </button>
-          <button className={`nav-item ${tab === 'comments' ? 'active' : ''}`} onClick={() => setTab('comments')}>
-            <span className="icon">💬</span> Comentarios
-          </button>
-          <button className={`nav-item ${tab === 'history' ? 'active' : ''}`} onClick={() => setTab('history')}>
-            <span className="icon">📜</span> Historial
-          </button>
-          <button className={`nav-item ${tab === 'notifications' ? 'active' : ''}`} onClick={() => setTab('notifications')}>
-            <span className="icon">🔔</span> Notificaciones
-          </button>
-          <button className={`nav-item ${tab === 'search' ? 'active' : ''}`} onClick={() => setTab('search')}>
-            <span className="icon">🔍</span> Búsqueda
-          </button>
-          <button className={`nav-item ${tab === 'reports' ? 'active' : ''}`} onClick={() => setTab('reports')}>
-            <span className="icon">📊</span> Reportes
-          </button>
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="user-profile">
-            <div className="avatar">{(currentUser?.username || 'G')[0].toUpperCase()}</div>
-            <div className="user-info">
-              <span className="user-name">{currentUser?.username || 'Invitado'}</span>
-              <button className="logout-btn" onClick={currentUser ? logout : () => { }}>
-                {currentUser ? 'Cerrar sesión' : 'Acceder'}
+      {!currentUser ? (
+        <LoginView onLogin={(user) => {
+          localStorage.setItem('currentUser', JSON.stringify(user));
+          localStorage.setItem('currentUserId', user.id || user._id);
+          setCurrentUser(user);
+          refreshAll();
+        }} />
+      ) : (
+        <>
+          {/* Sidebar navigation */}
+          <aside className="sidebar glass">
+            <div className="sidebar-brand heading-font">TM Pro</div>
+            <nav className="sidebar-nav">
+              <button className={`nav-item ${tab === 'tasks' ? 'active' : ''}`} onClick={() => setTab('tasks')}>
+                <span className="icon">📋</span> Tareas
               </button>
-            </div>
-          </div>
-        </div>
-      </aside>
+              <button className={`nav-item ${tab === 'projects' ? 'active' : ''}`} onClick={() => setTab('projects')}>
+                <span className="icon">📁</span> Proyectos
+              </button>
+              <button className={`nav-item ${tab === 'comments' ? 'active' : ''}`} onClick={() => setTab('comments')}>
+                <span className="icon">💬</span> Comentarios
+              </button>
+              <button className={`nav-item ${tab === 'history' ? 'active' : ''}`} onClick={() => setTab('history')}>
+                <span className="icon">📜</span> Historial
+              </button>
+              <button className={`nav-item ${tab === 'notifications' ? 'active' : ''}`} onClick={() => setTab('notifications')}>
+                <span className="icon">🔔</span> Notificaciones
+              </button>
+              <button className={`nav-item ${tab === 'search' ? 'active' : ''}`} onClick={() => setTab('search')}>
+                <span className="icon">🔍</span> Búsqueda
+              </button>
+              <button className={`nav-item ${tab === 'reports' ? 'active' : ''}`} onClick={() => setTab('reports')}>
+                <span className="icon">📊</span> Reportes
+              </button>
+            </nav>
 
-      {/* Main Content Area */}
-      <main className="main-content">
-        <header className="top-header">
-          <h1 className="heading-font">{tab.charAt(0).toUpperCase() + tab.slice(1)}</h1>
-          {!currentUser && (
-            <button className="btn-modern btn-primary" onClick={() => { const u = prompt('Usuario', 'admin'); const p = prompt('Contraseña', 'admin'); fetch('/api/users').then(r => r.json()).then(list => { const found = list.find(x => x.username === u && x.password === p); if (found) { localStorage.setItem('currentUser', JSON.stringify(found)); localStorage.setItem('currentUserId', found.id || found._id); setCurrentUser(found); alert('Bienvenido'); refreshAll(); } else alert('Error') }) }}>
-              Iniciar Sesión
-            </button>
-          )}
-        </header>
-
-        <section className="content-inner">
-          {tab === 'tasks' && (
-            <div className="view-container">
-              <div className="grid-container">
-                <div className="glass-card panel-form">
-                  <h3>Detalles de Tarea</h3>
-                  <TaskForm users={users} projects={projects} currentUser={currentUser} selectedTask={selectedTask} onCreate={addTask} onUpdate={updateTask} onDelete={deleteTask} onRefresh={refreshAll} />
+            <div className="sidebar-footer">
+              <div className="user-profile">
+                <div className="avatar">{(currentUser?.username || 'G')[0].toUpperCase()}</div>
+                <div className="user-info">
+                  <span className="user-name">{currentUser?.username || 'Invitado'}</span>
+                  <button className="logout-btn" onClick={currentUser ? logout : () => { }}>
+                    {currentUser ? 'Cerrar sesión' : 'Acceder'}
+                  </button>
                 </div>
+              </div>
+            </div>
+          </aside>
 
-                <div className="glass-card panel-list">
-                  <div className="list-header">
-                    <h3>Todas las Tareas</h3>
-                    <div className="stats-pill">{tasks.length} tareas</div>
-                  </div>
-                  <div className="table-responsive">
-                    <table className="modern-table">
-                      <thead>
-                        <tr>
-                          <th>ID</th>
-                          <th>Título</th>
-                          <th>Estado</th>
-                          <th>Prioridad</th>
-                          <th>Proyecto</th>
-                          <th>Asignado</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {tasks.map((t, i) => {
-                          const isSelected = selectedTask && (selectedTask._id === t._id || selectedTask.id === t.id);
-                          return (
-                            <tr key={t.id || t._id} onClick={() => setSelectedTask(t)} className={isSelected ? 'selected' : ''}>
-                              <td>#{i + 1}</td>
-                              <td className="font-bold">{t.title}</td>
-                              <td><span className={`status-badge ${t.status?.toLowerCase().replace(' ', '-')}`}>{t.status}</span></td>
-                              <td><span className={`priority-badge ${t.priority?.toLowerCase()}`}>{t.priority}</span></td>
-                              <td>{projects.find(p => p.id === t.projectId || p._id === t.projectId)?.name || '—'}</td>
-                              <td>{users.find(u => u.id === t.assignedTo || u._id === t.assignedTo)?.username || '—'}</td>
+          {/* Main Content Area */}
+          <main className="main-content">
+            <header className="top-header">
+              <h1 className="heading-font">{tab.charAt(0).toUpperCase() + tab.slice(1)}</h1>
+            </header>
+
+            <section className="content-inner">
+              {tab === 'tasks' && (
+                <div className="view-container">
+                  <div className="grid-container">
+                    <div className="glass-card panel-form">
+                      <h3>Detalles de Tarea</h3>
+                      <TaskForm users={users} projects={projects} currentUser={currentUser} selectedTask={selectedTask} onCreate={addTask} onUpdate={updateTask} onDelete={deleteTask} onRefresh={refreshAll} />
+                    </div>
+
+                    <div className="glass-card panel-list">
+                      <div className="list-header">
+                        <h3>Todas las Tareas</h3>
+                        <div className="stats-pill">{tasks.length} tareas</div>
+                      </div>
+                      <div className="table-responsive">
+                        <table className="modern-table">
+                          <thead>
+                            <tr>
+                              <th>ID</th>
+                              <th>Título</th>
+                              <th>Estado</th>
+                              <th>Prioridad</th>
+                              <th>Proyecto</th>
+                              <th>Asignado</th>
                             </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
+                          </thead>
+                          <tbody>
+                            {tasks.map((t, i) => {
+                              const isSelected = selectedTask && (selectedTask._id === t._id || selectedTask.id === t.id);
+                              return (
+                                <tr key={t.id || t._id} onClick={() => setSelectedTask(t)} className={isSelected ? 'selected' : ''}>
+                                  <td>#{i + 1}</td>
+                                  <td className="font-bold">{t.title}</td>
+                                  <td><span className={`status-badge ${t.status?.toLowerCase().replace(' ', '-')}`}>{t.status}</span></td>
+                                  <td><span className={`priority-badge ${t.priority?.toLowerCase()}`}>{t.priority}</span></td>
+                                  <td>{projects.find(p => p.id === t.projectId || p._id === t.projectId)?.name || '—'}</td>
+                                  <td>{users.find(u => u.id === t.assignedTo || u._id === t.assignedTo)?.username || '—'}</td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {tab === 'projects' && (
-            <div className="view-container">
-              <div className="grid-container">
-                <div className="glass-card panel-form">
-                  <h3>Proyecto</h3>
-                  <div className="form-group"><label>Nombre</label><input id="projectName" className="modern-input" placeholder="Ej: Rediseño UI" /></div>
-                  <div className="form-group"><label>Descripción</label><textarea id="projectDesc" className="modern-input" placeholder="Descripción del proyecto..." /></div>
-                  <div className="form-actions">
-                    <button className="btn-modern btn-primary" onClick={async () => { const name = document.getElementById('projectName').value; const desc = document.getElementById('projectDesc').value; if (!name) return alert('Nombre requerido'); const r = await fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, description: desc }) }); if (r.ok) { alert('Agregado'); await refreshAll(); } }}>Agregar</button>
-                    <button className="btn-modern btn-secondary" onClick={async () => { const name = document.getElementById('projectName').value; if (!name) return alert('Selecciona'); const p = projects.find(x => x.name === name); if (!p) return alert('No encontrado'); const desc = document.getElementById('projectDesc').value; const id = p._id || p.id; const r = await fetch('/api/projects/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, description: desc }) }); if (r.ok) { alert('Actualizado'); await refreshAll(); } }}>Actualizar</button>
+              {tab === 'projects' && (
+                <div className="view-container">
+                  <div className="grid-container">
+                    <div className="glass-card panel-form">
+                      <h3>Proyecto</h3>
+                      <div className="form-group"><label>Nombre</label><input id="projectName" className="modern-input" placeholder="Ej: Rediseño UI" /></div>
+                      <div className="form-group"><label>Descripción</label><textarea id="projectDesc" className="modern-input" placeholder="Descripción del proyecto..." /></div>
+                      <div className="form-actions">
+                        <button className="btn-modern btn-primary" onClick={async () => { const name = document.getElementById('projectName').value; const desc = document.getElementById('projectDesc').value; if (!name) return alert('Nombre requerido'); const r = await fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, description: desc }) }); if (r.ok) { alert('Agregado'); await refreshAll(); } }}>Agregar</button>
+                        <button className="btn-modern btn-secondary" onClick={async () => { const name = document.getElementById('projectName').value; if (!name) return alert('Selecciona'); const p = projects.find(x => x.name === name); if (!p) return alert('No encontrado'); const desc = document.getElementById('projectDesc').value; const id = p._id || p.id; const r = await fetch('/api/projects/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, description: desc }) }); if (r.ok) { alert('Actualizado'); await refreshAll(); } }}>Actualizar</button>
+                      </div>
+                    </div>
+                    <div className="glass-card panel-list">
+                      <table className="modern-table">
+                        <thead><tr><th>#</th><th>Nombre</th><th>Descripción</th></tr></thead>
+                        <tbody>{projects.map((p, i) => <tr key={p._id || p.id} onClick={() => { document.getElementById('projectName').value = p.name; document.getElementById('projectDesc').value = p.description || '' }}><td>{i + 1}</td><td className="font-bold">{p.name}</td><td>{p.description}</td></tr>)}</tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
-                <div className="glass-card panel-list">
-                  <table className="modern-table">
-                    <thead><tr><th>#</th><th>Nombre</th><th>Descripción</th></tr></thead>
-                    <tbody>{projects.map((p, i) => <tr key={p._id || p.id} onClick={() => { document.getElementById('projectName').value = p.name; document.getElementById('projectDesc').value = p.description || '' }}><td>{i + 1}</td><td className="font-bold">{p.name}</td><td>{p.description}</td></tr>)}</tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {tab === 'comments' && (
-            <div className="view-container single-col">
-              <div className="glass-card">
-                <h3>Comentarios de Tarea</h3>
-                <div className="form-inline">
-                  <input id="commentTaskId" className="modern-input" placeholder="ID de Tarea" />
-                  <button className="btn-modern btn-secondary" onClick={loadComments}>Cargar</button>
-                </div>
-                <div className="form-group mt-4">
-                  <textarea id="commentText" className="modern-textarea" placeholder="Escribe un comentario..." style={{ height: 100 }} />
-                </div>
-                <button className="btn-modern btn-primary mt-2" onClick={addComment}>Enviar Comentario</button>
+              {tab === 'comments' && (
+                <div className="view-container single-col">
+                  <div className="glass-card">
+                    <h3>Comentarios de Tarea</h3>
+                    <div className="form-inline">
+                      <input id="commentTaskId" className="modern-input" placeholder="ID de Tarea" />
+                      <button className="btn-modern btn-secondary" onClick={loadComments}>Cargar</button>
+                    </div>
+                    <div className="form-group mt-4">
+                      <textarea id="commentText" className="modern-textarea" placeholder="Escribe un comentario..." style={{ height: 100 }} />
+                    </div>
+                    <button className="btn-modern btn-primary mt-2" onClick={addComment}>Enviar Comentario</button>
 
-                <div className="comment-feed mt-4">
-                  {comments.length > 0 ? (
-                    comments.map((c, i) => (
-                      <div key={c._id || c.id || i} className="comment-bubble glass">
-                        <div className="comment-header">
-                          <span className="comment-author">{users.find(u => u.id === c.userId || u._id === c.userId)?.username || 'Usuario'}</span>
-                          <span className="comment-date">{new Date(c.createdAt).toLocaleString()}</span>
-                        </div>
-                        <div className="comment-body">{c.commentText}</div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="empty-state">No hay comentarios para esta tarea.</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {tab === 'history' && (
-            <div className="view-container single-col">
-              <div className="glass-card">
-                <h3>Historial de Cambios</h3>
-                <div className="form-inline">
-                  <input id="historyTaskId" className="modern-input" placeholder="ID de Tarea" />
-                  <button className="btn-modern btn-secondary" onClick={loadHistory}>Ver Historia</button>
-                  <button className="btn-modern btn-secondary" onClick={loadAllHistory}>Ver Todo</button>
-                </div>
-
-                <div className="history-feed mt-4">
-                  {historyItems.length > 0 ? (
-                    historyItems.map((h, i) => (
-                      <div key={h._id || h.id || i} className="history-card glass">
-                        <div className="history-header">
-                          <div className="history-info">
-                            <span className="history-action">{h.action}</span>
-                            <span className="history-user">por {users.find(u => u.id === h.userId || u._id === h.userId)?.username || 'Desconocido'}</span>
+                    <div className="comment-feed mt-4">
+                      {comments.length > 0 ? (
+                        comments.map((c, i) => (
+                          <div key={c._id || c.id || i} className="comment-bubble glass">
+                            <div className="comment-header">
+                              <span className="comment-author">{users.find(u => u.id === c.userId || u._id === c.userId)?.username || 'Usuario'}</span>
+                              <span className="comment-date">{new Date(c.createdAt).toLocaleString()}</span>
+                            </div>
+                            <div className="comment-body">{c.commentText}</div>
                           </div>
-                          <span className="history-date">{new Date(h.timestamp).toLocaleString()}</span>
-                        </div>
-                        <div className="history-details">
-                          <div className="detail-item">
-                            <span className="label">Anterior:</span>
-                            <span className="value old">{h.oldValue || '(vacío)'}</span>
+                        ))
+                      ) : (
+                        <div className="empty-state">No hay comentarios para esta tarea.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {tab === 'history' && (
+                <div className="view-container single-col">
+                  <div className="glass-card">
+                    <h3>Historial de Cambios</h3>
+                    <div className="form-inline">
+                      <input id="historyTaskId" className="modern-input" placeholder="ID de Tarea" />
+                      <button className="btn-modern btn-secondary" onClick={loadHistory}>Ver Historia</button>
+                      <button className="btn-modern btn-secondary" onClick={loadAllHistory}>Ver Todo</button>
+                    </div>
+
+                    <div className="history-feed mt-4">
+                      {historyItems.length > 0 ? (
+                        historyItems.map((h, i) => (
+                          <div key={h._id || h.id || i} className="history-card glass">
+                            <div className="history-header">
+                              <div className="history-info">
+                                <span className="history-action">{h.action}</span>
+                                <span className="history-user">por {users.find(u => u.id === h.userId || u._id === h.userId)?.username || 'Desconocido'}</span>
+                              </div>
+                              <span className="history-date">{new Date(h.timestamp).toLocaleString()}</span>
+                            </div>
+                            <div className="history-details">
+                              <div className="detail-item">
+                                <span className="label">Anterior:</span>
+                                <span className="value old">{h.oldValue || '(vacío)'}</span>
+                              </div>
+                              <div className="detail-item">
+                                <span className="label">Nuevo:</span>
+                                <span className="value new">{h.newValue || '(vacío)'}</span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="detail-item">
-                            <span className="label">Nuevo:</span>
-                            <span className="value new">{h.newValue || '(vacío)'}</span>
+                        ))
+                      ) : (
+                        <div className="empty-state">No hay registros de historial disponibles.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {tab === 'notifications' && (
+                <div className="view-container single-col">
+                  <div className="glass-card">
+                    <h3>Mis Notificaciones</h3>
+                    <div className="form-actions">
+                      <button className="btn-modern btn-primary" onClick={loadNotifications}>Actualizar</button>
+                      <button className="btn-modern btn-secondary" onClick={markNotificationsRead}>Marcar todo como leído</button>
+                    </div>
+                    <textarea className="modern-textarea mt-4" readOnly></textarea>
+                  </div>
+                </div>
+              )}
+
+              {tab === 'search' && (
+                <div className="view-container single-col">
+                  <div className="glass-card">
+                    <h3>Criterios de Búsqueda</h3>
+                    <div className="search-grid">
+                      <div className="form-group"><label>Texto</label><input id="searchText" className="modern-input" /></div>
+                      <div className="form-group"><label>Estado</label><select id="searchStatus" className="modern-input"><option value="">Todos</option><option>Pendiente</option><option>En Progreso</option><option>Completada</option></select></div>
+                      <div className="form-group"><label>Prioridad</label><select id="searchPriority" className="modern-input"><option value="">Todos</option><option>Baja</option><option>Media</option><option>Alta</option><option>Crítica</option></select></div>
+                      <div className="form-group"><label>Proyecto</label><select id="searchProject" className="modern-input"><option value="">Todos</option>{projects.map(p => <option key={p._id || p.id} value={p._id || p.id}>{p.name}</option>)}</select></div>
+                    </div>
+                    <button className="btn-modern btn-primary mt-4" onClick={searchTasks}>Buscar Ahora</button>
+
+                    <div className="search-feed mt-4">
+                      {searchResults.length > 0 ? (
+                        searchResults.map((t, i) => (
+                          <div key={t._id || t.id || i} className="search-result-card glass" onClick={() => { setTab('tasks'); setSelectedTask(t); }}>
+                            <div className="result-main">
+                              <span className="result-title">{t.title}</span>
+                              <span className="result-project">{projects.find(p => p.id === t.projectId || p._id === t.projectId)?.name || 'Sin Proyecto'}</span>
+                            </div>
+                            <div className="result-meta">
+                              <span className={`status-badge ${t.status?.toLowerCase().replace(' ', '-')}`}>{t.status}</span>
+                              <span className={`priority-badge ${t.priority?.toLowerCase()}`}>{t.priority}</span>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="empty-state">No hay registros de historial disponibles.</div>
-                  )}
+                        ))
+                      ) : (
+                        <div className="empty-state">Realiza una búsqueda para ver los resultados aquí.</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {tab === 'notifications' && (
-            <div className="view-container single-col">
-              <div className="glass-card">
-                <h3>Mis Notificaciones</h3>
-                <div className="form-actions">
-                  <button className="btn-modern btn-primary" onClick={loadNotifications}>Actualizar</button>
-                  <button className="btn-modern btn-secondary" onClick={markNotificationsRead}>Marcar todo como leído</button>
-                </div>
-                <textarea className="modern-textarea mt-4" readOnly></textarea>
-              </div>
-            </div>
-          )}
+              {tab === 'reports' && (
+                <div className="view-container single-col">
+                  <div className="glass-card">
+                    <h3>Analítica y Reportes</h3>
+                    <div className="report-actions">
+                      <button className="btn-modern btn-secondary" onClick={reportTasks}>Tareas por Estado</button>
+                      <button className="btn-modern btn-secondary" onClick={reportProjects}>Tareas por Proyecto</button>
+                      <button className="btn-modern btn-secondary" onClick={reportUsers}>Tareas por Usuario</button>
+                      <button className="btn-modern btn-primary" onClick={exportCsv}>💾 Exportar CSV</button>
+                    </div>
 
-          {tab === 'search' && (
-            <div className="view-container single-col">
-              <div className="glass-card">
-                <h3>Criterios de Búsqueda</h3>
-                <div className="search-grid">
-                  <div className="form-group"><label>Texto</label><input id="searchText" className="modern-input" /></div>
-                  <div className="form-group"><label>Estado</label><select id="searchStatus" className="modern-input"><option value="">Todos</option><option>Pendiente</option><option>En Progreso</option><option>Completada</option></select></div>
-                  <div className="form-group"><label>Prioridad</label><select id="searchPriority" className="modern-input"><option value="">Todos</option><option>Baja</option><option>Media</option><option>Alta</option><option>Crítica</option></select></div>
-                  <div className="form-group"><label>Proyecto</label><select id="searchProject" className="modern-input"><option value="">Todos</option>{projects.map(p => <option key={p._id || p.id} value={p._id || p.id}>{p.name}</option>)}</select></div>
+                    <div className="report-grid mt-4">
+                      {reportData.length > 0 ? (
+                        reportData.map((item, i) => (
+                          <div key={i} className="report-card glass">
+                            <span className="report-label">{item.label}</span>
+                            <span className="report-value">{item.value}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="empty-state">Selecciona un reporte para ver las estadísticas.</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <button className="btn-modern btn-primary mt-4" onClick={searchTasks}>Buscar Ahora</button>
-
-                <div className="search-feed mt-4">
-                  {searchResults.length > 0 ? (
-                    searchResults.map((t, i) => (
-                      <div key={t._id || t.id || i} className="search-result-card glass" onClick={() => { setTab('tasks'); setSelectedTask(t); }}>
-                        <div className="result-main">
-                          <span className="result-title">{t.title}</span>
-                          <span className="result-project">{projects.find(p => p.id === t.projectId || p._id === t.projectId)?.name || 'Sin Proyecto'}</span>
-                        </div>
-                        <div className="result-meta">
-                          <span className={`status-badge ${t.status?.toLowerCase().replace(' ', '-')}`}>{t.status}</span>
-                          <span className={`priority-badge ${t.priority?.toLowerCase()}`}>{t.priority}</span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="empty-state">Realiza una búsqueda para ver los resultados aquí.</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {tab === 'reports' && (
-            <div className="view-container single-col">
-              <div className="glass-card">
-                <h3>Analítica y Reportes</h3>
-                <div className="report-actions">
-                  <button className="btn-modern btn-secondary" onClick={reportTasks}>Tareas por Estado</button>
-                  <button className="btn-modern btn-secondary" onClick={reportProjects}>Tareas por Proyecto</button>
-                  <button className="btn-modern btn-secondary" onClick={reportUsers}>Tareas por Usuario</button>
-                  <button className="btn-modern btn-primary" onClick={exportCsv}>💾 Exportar CSV</button>
-                </div>
-
-                <div className="report-grid mt-4">
-                  {reportData.length > 0 ? (
-                    reportData.map((item, i) => (
-                      <div key={i} className="report-card glass">
-                        <span className="report-label">{item.label}</span>
-                        <span className="report-value">{item.value}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="empty-state">Selecciona un reporte para ver las estadísticas.</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </section>
-      </main>
+              )}
+            </section>
+          </main>
+        </>
+      )}
 
       <style jsx>{`
         .layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
@@ -506,7 +512,6 @@ export default function Home() {
         .report-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
         .report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
         .report-card { padding: 24px; border-radius: 16px; border: 1px solid var(--glass-border); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
-        .report-label { font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
         .report-value { font-size: 28px; font-weight: 700; color: var(--accent-primary); }
       `}</style>
     </div>
@@ -596,6 +601,88 @@ function TaskForm({ users, projects, onCreate, onUpdate, onDelete, currentUser, 
         .btn-modern { min-height: 42px; width: 100%; justify-content: center; }
         .danger { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
         .danger:hover { background: rgba(239, 68, 68, 0.1); border-color: #ef4444; }
+      `}</style>
+    </div>
+  )
+}
+
+function LoginView({ onLogin }) {
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!username || !password) return alert('Campos obligatorios');
+    setLoading(true);
+    try {
+      const r = await fetch('/api/users');
+      const list = await r.json();
+      const found = list.find(u => u.username === username && u.password === password);
+      setTimeout(() => {
+        if (found) {
+          onLogin(found);
+        } else {
+          alert('Credenciales inválidas');
+          setLoading(false);
+        }
+      }, 800);
+    } catch (err) {
+      alert('Error de conexión');
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="login-container">
+      <div className="login-card glass">
+        <div className="login-logo heading-font">TM Pro</div>
+        <p className="login-subtitle">Eleva tu productividad. <br />Inicia sesión para gestionar tus proyectos.</p>
+        <form className="login-form" onSubmit={handleSubmit}>
+          <div className="login-field">
+            <label>Nombre de Usuario</label>
+            <div className="login-input-wrapper">
+              <input type="text" className="modern-input" value={username} onChange={e => setUsername(e.target.value)} placeholder="Ej: admin" required />
+            </div>
+          </div>
+          <div className="login-field">
+            <label>Contraseña</label>
+            <div className="login-input-wrapper">
+              <input type="password" className="modern-input" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
+            </div>
+          </div>
+          <button type="submit" className="btn-modern btn-primary mt-4" style={{ height: 50, fontSize: 16 }} disabled={loading}>
+            {loading ? 'Validando Acceso...' : 'Iniciar Sesión'}
+          </button>
+        </form>
+      </div>
+      <style jsx>{`
+        .login-container { 
+          width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; 
+          background: #0f172a;
+          background-image: 
+            radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+            radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.15) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.1) 0px, transparent 50%),
+            radial-gradient(at 0% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
+          position: fixed; top: 0; left: 0; z-index: 100; overflow: hidden;
+        }
+        .login-card { 
+          width: calc(100% - 40px); max-width: 420px; padding: 48px; text-align: center; 
+          border-radius: 32px; backdrop-filter: blur(20px); background: rgba(255, 255, 255, 0.03);
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.1);
+          animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .login-logo { font-size: 40px; font-weight: 800; color: #fff; margin-bottom: 12px; letter-spacing: -1px; }
+        .login-subtitle { color: var(--text-secondary); margin-bottom: 40px; font-size: 15px; line-height: 1.6; }
+        .login-form { display: flex; flex-direction: column; gap: 24px; }
+        .login-field { display: flex; flex-direction: column; gap: 10px; text-align: left; }
+        .login-field label { font-size: 12px; font-weight: 700; color: var(--accent-primary); text-transform: uppercase; letter-spacing: 1px; }
+        .login-card .modern-input { background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); padding: 14px 16px; font-size: 16px; transition: all 0.3s ease; }
+        .login-card .modern-input:focus { background: rgba(0,0,0,0.4); border-color: var(--accent-primary); box-shadow: 0 0 15px rgba(56, 189, 248, 0.2); }
+        .mt-4 { margin-top: 16px; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
     </div>
   )
