@@ -13,6 +13,7 @@ export default function Home() {
   const [comments, setComments] = useState([])
   const [historyItems, setHistoryItems] = useState([])
   const [searchResults, setSearchResults] = useState([])
+  const [reportData, setReportData] = useState([])
 
   useEffect(() => {
     refreshAll()
@@ -126,15 +127,15 @@ export default function Home() {
   // Reports
   const reportTasks = async () => {
     const r = await fetch('/api/reports/tasks-by-status');
-    if (r.ok) { const j = await r.json(); setOutput(Object.entries(j).map(x => `${x[0]}: ${x[1]} tareas`).join('\n')) }
+    if (r.ok) { const j = await r.json(); setReportData(Object.entries(j).map(([label, value]) => ({ label: `${label} (Tareas)`, value }))) }
   }
   const reportProjects = async () => {
     const r = await fetch('/api/reports/projects-count');
-    if (r.ok) { const j = await r.json(); setOutput(Object.entries(j).map(x => `${x[0]}: ${x[1]} tareas`).join('\n')) }
+    if (r.ok) { const j = await r.json(); setReportData(Object.entries(j).map(([label, value]) => ({ label, value: `${value} tareas` }))) }
   }
   const reportUsers = async () => {
     const r = await fetch('/api/reports/users-count');
-    if (r.ok) { const j = await r.json(); setOutput(Object.entries(j).map(x => `${x[0]}: ${x[1]} tareas`).join('\n')) }
+    if (r.ok) { const j = await r.json(); setReportData(Object.entries(j).map(([label, value]) => ({ label, value: `${value} tareas` }))) }
   }
   const exportCsv = async () => { const r = await fetch('/api/reports/export/tasks/csv'); if (r.ok) { const blob = await r.blob(); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'export_tasks.csv'; a.click(); URL.revokeObjectURL(url); } }
 
@@ -394,7 +395,19 @@ export default function Home() {
                   <button className="btn-modern btn-secondary" onClick={reportUsers}>Tareas por Usuario</button>
                   <button className="btn-modern btn-primary" onClick={exportCsv}>💾 Exportar CSV</button>
                 </div>
-                <textarea className="modern-textarea mt-4" readOnly></textarea>
+
+                <div className="report-grid mt-4">
+                  {reportData.length > 0 ? (
+                    reportData.map((item, i) => (
+                      <div key={i} className="report-card glass">
+                        <span className="report-label">{item.label}</span>
+                        <span className="report-value">{item.value}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="empty-state">Selecciona un reporte para ver las estadísticas.</div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -489,6 +502,12 @@ export default function Home() {
         .result-project { font-size: 12px; color: var(--text-secondary); }
         .result-meta { display: flex; align-items: center; gap: 12px; }
         @media (max-width: 600px) { .search-grid { grid-template-columns: 1fr; } .search-result-card { flex-direction: column; align-items: flex-start; gap: 12px; } }
+
+        .report-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+        .report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; }
+        .report-card { padding: 24px; border-radius: 16px; border: 1px solid var(--glass-border); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+        .report-label { font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .report-value { font-size: 28px; font-weight: 700; color: var(--accent-primary); }
       `}</style>
     </div>
   )
