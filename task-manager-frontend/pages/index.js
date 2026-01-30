@@ -22,7 +22,9 @@ export default function Home() {
   const [commentsDateFrom, setCommentsDateFrom] = useState('')
   const [commentsDateTo, setCommentsDateTo] = useState('')
   const [projectSearch, setProjectSearch] = useState('')
+  const [projectsPage, setProjectsPage] = useState(1)
   const itemsPerPage = 5
+  const projectsPerPage = 6
 
   useEffect(() => {
     refreshAll()
@@ -291,7 +293,7 @@ export default function Home() {
                         {projectSearch && (
                           <button
                             className="btn-modern btn-secondary btn-sm"
-                            onClick={() => setProjectSearch('')}
+                            onClick={() => { setProjectSearch(''); setProjectsPage(1); }}
                           >
                             Limpiar
                           </button>
@@ -301,25 +303,69 @@ export default function Home() {
                       <table className="modern-table">
                         <thead><tr><th>#</th><th>Nombre</th><th>Descripción</th></tr></thead>
                         <tbody>
-                          {projects
-                            .filter(p => {
+                          {(() => {
+                            const filteredProjects = projects.filter(p => {
                               if (!projectSearch) return true;
                               const search = projectSearch.toLowerCase();
                               return (
                                 p.name?.toLowerCase().includes(search) ||
                                 p.description?.toLowerCase().includes(search)
                               );
-                            })
-                            .map((p, i) => (
-                              <tr key={p._id || p.id} onClick={() => { document.getElementById('projectName').value = p.name; document.getElementById('projectDesc').value = p.description || '' }}>
-                                <td>{i + 1}</td>
-                                <td className="font-bold">{p.name}</td>
-                                <td>{p.description}</td>
-                              </tr>
-                            ))
-                          }
+                            });
+
+                            return filteredProjects
+                              .slice((projectsPage - 1) * projectsPerPage, projectsPage * projectsPerPage)
+                              .map((p, i) => (
+                                <tr key={p._id || p.id} onClick={() => { document.getElementById('projectName').value = p.name; document.getElementById('projectDesc').value = p.description || '' }}>
+                                  <td>{(projectsPage - 1) * projectsPerPage + i + 1}</td>
+                                  <td className="font-bold">{p.name}</td>
+                                  <td>{p.description}</td>
+                                </tr>
+                              ));
+                          })()}
                         </tbody>
                       </table>
+
+                      {/* Pagination for Projects */}
+                      {(() => {
+                        const filteredProjects = projects.filter(p => {
+                          if (!projectSearch) return true;
+                          const search = projectSearch.toLowerCase();
+                          return (
+                            p.name?.toLowerCase().includes(search) ||
+                            p.description?.toLowerCase().includes(search)
+                          );
+                        });
+
+                        return filteredProjects.length > projectsPerPage && (
+                          <div className="pagination-bar mt-6">
+                            <button
+                              className="btn-modern btn-secondary btn-sm"
+                              onClick={() => setProjectsPage(p => Math.max(1, p - 1))}
+                              disabled={projectsPage === 1}
+                            >
+                              ← Anterior
+                            </button>
+                            <div className="page-indicator">
+                              {Array.from({ length: Math.ceil(filteredProjects.length / projectsPerPage) }).map((_, i) => (
+                                <button
+                                  key={i}
+                                  className={`page-dot ${projectsPage === i + 1 ? 'active' : ''}`}
+                                  onClick={() => setProjectsPage(i + 1)}
+                                />
+                              ))}
+                              <span className="page-text">Página {projectsPage} de {Math.ceil(filteredProjects.length / projectsPerPage)}</span>
+                            </div>
+                            <button
+                              className="btn-modern btn-secondary btn-sm"
+                              onClick={() => setProjectsPage(p => Math.min(Math.ceil(filteredProjects.length / projectsPerPage), p + 1))}
+                              disabled={projectsPage === Math.ceil(filteredProjects.length / projectsPerPage)}
+                            >
+                              Siguiente →
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
