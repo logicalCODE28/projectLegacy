@@ -12,6 +12,7 @@ export default function Home() {
   const [selectedTask, setSelectedTask] = useState(null)
   const [comments, setComments] = useState([])
   const [historyItems, setHistoryItems] = useState([])
+  const [searchResults, setSearchResults] = useState([])
 
   useEffect(() => {
     refreshAll()
@@ -117,7 +118,7 @@ export default function Home() {
     const r = await fetch('/api/tasks/search?' + params.toString());
     if (r.ok) {
       const list = await r.json();
-      setOutput(list.map(t => `${t.title} | ${t.status} | ${t.priority} | ${projects.find(p => p._id === t.projectId || p.id === t.projectId)?.name || t.projectId}`).join('\n'))
+      setSearchResults(list);
     } else alert('Error en búsqueda')
   }
 
@@ -360,7 +361,25 @@ export default function Home() {
                   <div className="form-group"><label>Proyecto</label><select id="searchProject" className="modern-input"><option value="">Todos</option>{projects.map(p => <option key={p._id || p.id} value={p._id || p.id}>{p.name}</option>)}</select></div>
                 </div>
                 <button className="btn-modern btn-primary mt-4" onClick={searchTasks}>Buscar Ahora</button>
-                <textarea className="modern-textarea mt-4" readOnly></textarea>
+
+                <div className="search-feed mt-4">
+                  {searchResults.length > 0 ? (
+                    searchResults.map((t, i) => (
+                      <div key={t._id || t.id || i} className="search-result-card glass" onClick={() => { setTab('tasks'); setSelectedTask(t); }}>
+                        <div className="result-main">
+                          <span className="result-title">{t.title}</span>
+                          <span className="result-project">{projects.find(p => p.id === t.projectId || p._id === t.projectId)?.name || 'Sin Proyecto'}</span>
+                        </div>
+                        <div className="result-meta">
+                          <span className={`status-badge ${t.status?.toLowerCase().replace(' ', '-')}`}>{t.status}</span>
+                          <span className={`priority-badge ${t.priority?.toLowerCase()}`}>{t.priority}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="empty-state">Realiza una búsqueda para ver los resultados aquí.</div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -460,6 +479,16 @@ export default function Home() {
         .detail-item .value { font-size: 13px; padding: 8px; border-radius: 6px; background: rgba(0,0,0,0.2); }
         .detail-item .value.old { color: #f87171; border-left: 3px solid #f87171; }
         .detail-item .value.new { color: #4ade80; border-left: 3px solid #4ade80; }
+
+        .search-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .search-feed { display: flex; flex-direction: column; gap: 10px; max-height: 450px; overflow-y: auto; padding-right: 8px; }
+        .search-result-card { padding: 14px 18px; border-radius: 12px; border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: var(--transition); }
+        .search-result-card:hover { background: rgba(255,255,255,0.05); transform: translateX(5px); border-color: var(--accent-primary); }
+        .result-main { display: flex; flex-direction: column; gap: 4px; }
+        .result-title { font-weight: 600; font-size: 15px; color: var(--text-primary); }
+        .result-project { font-size: 12px; color: var(--text-secondary); }
+        .result-meta { display: flex; align-items: center; gap: 12px; }
+        @media (max-width: 600px) { .search-grid { grid-template-columns: 1fr; } .search-result-card { flex-direction: column; align-items: flex-start; gap: 12px; } }
       `}</style>
     </div>
   )
