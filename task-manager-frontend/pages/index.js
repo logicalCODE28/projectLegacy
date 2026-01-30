@@ -14,6 +14,8 @@ export default function Home() {
   const [historyItems, setHistoryItems] = useState([])
   const [searchResults, setSearchResults] = useState([])
   const [reportData, setReportData] = useState([])
+  const [historyPage, setHistoryPage] = useState(1)
+  const itemsPerPage = 5
 
   useEffect(() => {
     refreshAll()
@@ -87,16 +89,22 @@ export default function Home() {
     if (r.ok) { const list = await r.json(); setComments(list.reverse()); } else alert('Error al cargar');
   }
 
+  // History Reset Helper
+  const resetHistoryDisplay = (list) => {
+    setHistoryItems(list);
+    setHistoryPage(1);
+  }
+
   // History
   const loadHistory = async () => {
     const raw = document.getElementById('historyTaskId').value; if (!raw) return alert('ID requerido');
     const taskId = resolveTaskId(raw)
     const r = await fetch('/api/history/task/' + taskId);
-    if (r.ok) { const list = await r.json(); setHistoryItems(list.reverse()); }
+    if (r.ok) { const list = await r.json(); resetHistoryDisplay(list.reverse()); }
   }
 
   const loadAllHistory = async () => {
-    const r = await fetch('/api/history'); if (r.ok) { const list = await r.json(); setHistoryItems(list.slice(-100).reverse()); }
+    const r = await fetch('/api/history'); if (r.ok) { const list = await r.json(); resetHistoryDisplay(list.slice(-100).reverse()); }
   }
 
   // Notifications
@@ -316,27 +324,59 @@ export default function Home() {
 
                     <div className="history-feed mt-4">
                       {historyItems.length > 0 ? (
-                        historyItems.map((h, i) => (
-                          <div key={h._id || h.id || i} className="history-card glass">
-                            <div className="history-header">
-                              <div className="history-info">
-                                <span className="history-action">{h.action}</span>
-                                <span className="history-user">por {users.find(u => u.id === h.userId || u._id === h.userId)?.username || 'Desconocido'}</span>
+                        <>
+                          {historyItems.slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage).map((h, i) => (
+                            <div key={h._id || h.id || i} className="history-card glass">
+                              <div className="history-header">
+                                <div className="history-info">
+                                  <span className="history-action">{h.action}</span>
+                                  <span className="history-user">por {users.find(u => u.id === h.userId || u._id === h.userId)?.username || 'Desconocido'}</span>
+                                </div>
+                                <span className="history-date">{new Date(h.timestamp).toLocaleString()}</span>
                               </div>
-                              <span className="history-date">{new Date(h.timestamp).toLocaleString()}</span>
+                              <div className="history-details">
+                                <div className="detail-item">
+                                  <span className="label">Anterior:</span>
+                                  <span className="value old">{h.oldValue || '(vacío)'}</span>
+                                </div>
+                                <div className="detail-item">
+                                  <span className="label">Nuevo:</span>
+                                  <span className="value new">{h.newValue || '(vacío)'}</span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="history-details">
-                              <div className="detail-item">
-                                <span className="label">Anterior:</span>
-                                <span className="value old">{h.oldValue || '(vacío)'}</span>
+                          ))}
+
+                          {/* Pagination Controls */}
+                          {historyItems.length > itemsPerPage && (
+                            <div className="pagination-bar mt-6">
+                              <button
+                                className="btn-modern btn-secondary btn-sm"
+                                onClick={() => setHistoryPage(p => Math.max(1, p - 1))}
+                                disabled={historyPage === 1}
+                              >
+                                ← Anterior
+                              </button>
+                              <div className="page-indicator">
+                                {Array.from({ length: Math.ceil(historyItems.length / itemsPerPage) }).map((_, i) => (
+                                  <button
+                                    key={i}
+                                    className={`page-dot ${historyPage === i + 1 ? 'active' : ''}`}
+                                    onClick={() => setHistoryPage(i + 1)}
+                                  />
+                                ))}
+                                <span className="page-text">Página {historyPage} de {Math.ceil(historyItems.length / itemsPerPage)}</span>
                               </div>
-                              <div className="detail-item">
-                                <span className="label">Nuevo:</span>
-                                <span className="value new">{h.newValue || '(vacío)'}</span>
-                              </div>
+                              <button
+                                className="btn-modern btn-secondary btn-sm"
+                                onClick={() => setHistoryPage(p => Math.min(Math.ceil(historyItems.length / itemsPerPage), p + 1))}
+                                disabled={historyPage === Math.ceil(historyItems.length / itemsPerPage)}
+                              >
+                                Siguiente →
+                              </button>
                             </div>
-                          </div>
-                        ))
+                          )}
+                        </>
                       ) : (
                         <div className="empty-state">No hay registros de historial disponibles.</div>
                       )}
@@ -526,6 +566,14 @@ export default function Home() {
         .detail-item .value { font-size: 13px; padding: 8px; border-radius: 6px; background: rgba(0,0,0,0.2); }
         .detail-item .value.old { color: #f87171; border-left: 3px solid #f87171; }
         .detail-item .value.new { color: #4ade80; border-left: 3px solid #4ade80; }
+
+        .pagination-bar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid var(--glass-border); }
+        .page-indicator { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center; }
+        .page-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--glass-border); border: none; padding: 0; cursor: pointer; transition: var(--transition); }
+        .page-dot.active { background: var(--accent-primary); box-shadow: 0 0 10px var(--accent-primary); width: 20px; border-radius: 4px; }
+        .page-text { font-size: 11px; color: var(--text-secondary); margin-left: 10px; font-weight: 500; text-transform: uppercase; }
+        .btn-sm { padding: 8px 16px !important; min-height: 0 !important; width: auto !important; font-size: 11px !important; }
+        .mt-6 { margin-top: 24px; }
 
         .search-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .search-feed { display: flex; flex-direction: column; gap: 10px; max-height: 450px; overflow-y: auto; padding-right: 8px; }
