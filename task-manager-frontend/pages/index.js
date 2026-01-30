@@ -16,6 +16,7 @@ export default function Home() {
   const [reportData, setReportData] = useState([])
   const [historyPage, setHistoryPage] = useState(1)
   const [searchPage, setSearchPage] = useState(1)
+  const [commentsPage, setCommentsPage] = useState(1)
   const itemsPerPage = 5
 
   useEffect(() => {
@@ -87,7 +88,7 @@ export default function Home() {
     const raw = document.getElementById('commentTaskId').value; if (!raw) return alert('ID requerido');
     const taskId = resolveTaskId(raw)
     const r = await fetch('/api/comments/task/' + taskId);
-    if (r.ok) { const list = await r.json(); setComments(list.reverse()); } else alert('Error al cargar');
+    if (r.ok) { const list = await r.json(); setComments(list.reverse()); setCommentsPage(1); } else alert('Error al cargar');
   }
 
   // History Reset Helper
@@ -297,15 +298,47 @@ export default function Home() {
 
                     <div className="comment-feed mt-4">
                       {comments.length > 0 ? (
-                        comments.map((c, i) => (
-                          <div key={c._id || c.id || i} className="comment-bubble glass">
-                            <div className="comment-header">
-                              <span className="comment-author">{users.find(u => u.id === c.userId || u._id === c.userId)?.username || 'Usuario'}</span>
-                              <span className="comment-date">{new Date(c.createdAt).toLocaleString()}</span>
+                        <>
+                          {comments.slice((commentsPage - 1) * itemsPerPage, commentsPage * itemsPerPage).map((c, i) => (
+                            <div key={c._id || c.id || i} className="comment-bubble glass">
+                              <div className="comment-header">
+                                <span className="comment-author">{users.find(u => u.id === c.userId || u._id === c.userId)?.username || 'Usuario'}</span>
+                                <span className="comment-date">{new Date(c.createdAt).toLocaleString()}</span>
+                              </div>
+                              <div className="comment-body">{c.commentText}</div>
                             </div>
-                            <div className="comment-body">{c.commentText}</div>
-                          </div>
-                        ))
+                          ))}
+
+                          {/* Pagination Controls for Comments */}
+                          {comments.length > itemsPerPage && (
+                            <div className="pagination-bar mt-6">
+                              <button
+                                className="btn-modern btn-secondary btn-sm"
+                                onClick={() => setCommentsPage(p => Math.max(1, p - 1))}
+                                disabled={commentsPage === 1}
+                              >
+                                ← Anterior
+                              </button>
+                              <div className="page-indicator">
+                                {Array.from({ length: Math.ceil(comments.length / itemsPerPage) }).map((_, i) => (
+                                  <button
+                                    key={i}
+                                    className={`page-dot ${commentsPage === i + 1 ? 'active' : ''}`}
+                                    onClick={() => setCommentsPage(i + 1)}
+                                  />
+                                ))}
+                                <span className="page-text">Página {commentsPage} de {Math.ceil(comments.length / itemsPerPage)}</span>
+                              </div>
+                              <button
+                                className="btn-modern btn-secondary btn-sm"
+                                onClick={() => setCommentsPage(p => Math.min(Math.ceil(comments.length / itemsPerPage), p + 1))}
+                                disabled={commentsPage === Math.ceil(comments.length / itemsPerPage)}
+                              >
+                                Siguiente →
+                              </button>
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <div className="empty-state">No hay comentarios para esta tarea.</div>
                       )}
