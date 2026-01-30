@@ -15,6 +15,7 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState([])
   const [reportData, setReportData] = useState([])
   const [historyPage, setHistoryPage] = useState(1)
+  const [searchPage, setSearchPage] = useState(1)
   const itemsPerPage = 5
 
   useEffect(() => {
@@ -128,6 +129,7 @@ export default function Home() {
     if (r.ok) {
       const list = await r.json();
       setSearchResults(list);
+      setSearchPage(1);
     } else alert('Error en búsqueda')
   }
 
@@ -412,18 +414,50 @@ export default function Home() {
 
                     <div className="search-feed mt-4">
                       {searchResults.length > 0 ? (
-                        searchResults.map((t, i) => (
-                          <div key={t._id || t.id || i} className="search-result-card glass" onClick={() => { setTab('tasks'); setSelectedTask(t); }}>
-                            <div className="result-main">
-                              <span className="result-title">{t.title}</span>
-                              <span className="result-project">{projects.find(p => p.id === t.projectId || p._id === t.projectId)?.name || 'Sin Proyecto'}</span>
+                        <>
+                          {searchResults.slice((searchPage - 1) * itemsPerPage, searchPage * itemsPerPage).map((t, i) => (
+                            <div key={t._id || t.id || i} className="search-result-card glass" onClick={() => { setTab('tasks'); setSelectedTask(t); }}>
+                              <div className="result-main">
+                                <span className="result-title">{t.title}</span>
+                                <span className="result-project">{projects.find(p => p.id === t.projectId || p._id === t.projectId)?.name || 'Sin Proyecto'}</span>
+                              </div>
+                              <div className="result-meta">
+                                <span className={`status-badge ${t.status?.toLowerCase().replace(' ', '-')}`}>{t.status}</span>
+                                <span className={`priority-badge ${t.priority?.toLowerCase()}`}>{t.priority}</span>
+                              </div>
                             </div>
-                            <div className="result-meta">
-                              <span className={`status-badge ${t.status?.toLowerCase().replace(' ', '-')}`}>{t.status}</span>
-                              <span className={`priority-badge ${t.priority?.toLowerCase()}`}>{t.priority}</span>
+                          ))}
+
+                          {/* Pagination Controls for Search */}
+                          {searchResults.length > itemsPerPage && (
+                            <div className="pagination-bar mt-6">
+                              <button
+                                className="btn-modern btn-secondary btn-sm"
+                                onClick={() => setSearchPage(p => Math.max(1, p - 1))}
+                                disabled={searchPage === 1}
+                              >
+                                ← Anterior
+                              </button>
+                              <div className="page-indicator">
+                                {Array.from({ length: Math.ceil(searchResults.length / itemsPerPage) }).map((_, i) => (
+                                  <button
+                                    key={i}
+                                    className={`page-dot ${searchPage === i + 1 ? 'active' : ''}`}
+                                    onClick={() => setSearchPage(i + 1)}
+                                  />
+                                ))}
+                                <span className="page-text">Página {searchPage} de {Math.ceil(searchResults.length / itemsPerPage)}</span>
+                              </div>
+                              <button
+                                className="btn-modern btn-secondary btn-sm"
+                                onClick={() => setSearchPage(p => Math.min(Math.ceil(searchResults.length / itemsPerPage), p + 1))}
+                                disabled={searchPage === Math.ceil(searchResults.length / itemsPerPage)}
+                              >
+                                Siguiente →
+                              </button>
                             </div>
-                          </div>
-                        ))
+                          )}
+                        </>
                       ) : (
                         <div className="empty-state">Realiza una búsqueda para ver los resultados aquí.</div>
                       )}
