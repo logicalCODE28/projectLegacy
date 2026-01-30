@@ -21,6 +21,7 @@ export default function Home() {
   const [historyDateTo, setHistoryDateTo] = useState('')
   const [commentsDateFrom, setCommentsDateFrom] = useState('')
   const [commentsDateTo, setCommentsDateTo] = useState('')
+  const [projectSearch, setProjectSearch] = useState('')
   const itemsPerPage = 5
 
   useEffect(() => {
@@ -278,9 +279,46 @@ export default function Home() {
                       </div>
                     </div>
                     <div className="glass-card panel-list">
+                      {/* Search Filter */}
+                      <div className="project-search-bar">
+                        <input
+                          type="text"
+                          className="modern-input"
+                          placeholder="🔍 Buscar proyectos..."
+                          value={projectSearch}
+                          onChange={e => setProjectSearch(e.target.value)}
+                        />
+                        {projectSearch && (
+                          <button
+                            className="btn-modern btn-secondary btn-sm"
+                            onClick={() => setProjectSearch('')}
+                          >
+                            Limpiar
+                          </button>
+                        )}
+                      </div>
+
                       <table className="modern-table">
                         <thead><tr><th>#</th><th>Nombre</th><th>Descripción</th></tr></thead>
-                        <tbody>{projects.map((p, i) => <tr key={p._id || p.id} onClick={() => { document.getElementById('projectName').value = p.name; document.getElementById('projectDesc').value = p.description || '' }}><td>{i + 1}</td><td className="font-bold">{p.name}</td><td>{p.description}</td></tr>)}</tbody>
+                        <tbody>
+                          {projects
+                            .filter(p => {
+                              if (!projectSearch) return true;
+                              const search = projectSearch.toLowerCase();
+                              return (
+                                p.name?.toLowerCase().includes(search) ||
+                                p.description?.toLowerCase().includes(search)
+                              );
+                            })
+                            .map((p, i) => (
+                              <tr key={p._id || p.id} onClick={() => { document.getElementById('projectName').value = p.name; document.getElementById('projectDesc').value = p.description || '' }}>
+                                <td>{i + 1}</td>
+                                <td className="font-bold">{p.name}</td>
+                                <td>{p.description}</td>
+                              </tr>
+                            ))
+                          }
+                        </tbody>
                       </table>
                     </div>
                   </div>
@@ -733,6 +771,9 @@ export default function Home() {
         .history-filters { display: flex; gap: 12px; align-items: flex-end; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid var(--glass-border); }
         .filter-group { display: flex; flex-direction: column; gap: 6px; flex: 1; }
         .filter-group label { font-size: 11px; color: var(--text-secondary); font-weight: 500; text-transform: uppercase; }
+
+        .project-search-bar { display: flex; gap: 12px; align-items: center; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 16px; }
+        .project-search-bar input { flex: 1; }
 
         .pagination-bar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; border: 1px solid var(--glass-border); }
         .page-indicator { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center; }
