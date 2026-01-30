@@ -62,7 +62,7 @@ export default function Home() {
 
   const updateTask = async (id, payload) => {
     const r = await fetch('/api/tasks/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-    if (r.ok) { alert('Tarea actualizada'); await refreshAll(); } else { alert('Error al actualizar') }
+    if (r.ok) { alert('Tarea actualizada'); await refreshAll(); setSelectedTask(null); } else { alert('Error al actualizar') }
   }
 
   const deleteTask = async (id) => {
@@ -539,7 +539,15 @@ function TaskForm({ users, projects, onCreate, onUpdate, onDelete, currentUser, 
       setDueDate(selectedTask.dueDate ? (new Date(selectedTask.dueDate)).toISOString().split('T')[0] : '')
       setHours(selectedTask.estimatedHours ? String(selectedTask.estimatedHours) : '')
     } else {
+      setTitle('')
+      setDescription('')
+      setStatus('Pendiente')
+      setPriority('Media')
+      setAssignedTo('')
+      setDueDate('')
+      setHours('')
       if (projects && projects.length) setProjectId(projects[0]._id || projects[0].id || '')
+      else setProjectId('')
     }
   }, [selectedTask, projects])
 
