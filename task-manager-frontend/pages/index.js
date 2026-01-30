@@ -185,8 +185,11 @@ export default function Home() {
                 <div className="avatar">{(currentUser?.username || 'G')[0].toUpperCase()}</div>
                 <div className="user-info">
                   <span className="user-name">{currentUser?.username || 'Invitado'}</span>
-                  <button className="logout-btn" onClick={currentUser ? logout : () => { }}>
-                    {currentUser ? 'Cerrar sesión' : 'Acceder'}
+                  <button className="logout-btn-premium" onClick={currentUser ? logout : () => { }}>
+                    <span className="logout-icon">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                    </span>
+                    {currentUser ? 'Salir' : 'Acceder'}
                   </button>
                 </div>
               </div>
@@ -433,9 +436,34 @@ export default function Home() {
         .user-profile { display: flex; align-items: center; gap: 12px; }
         .avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; }
         .user-info { display: flex; flex-direction: column; }
-        .user-name { font-size: 14px; font-weight: 500; }
-        .logout-btn { background: none; border: none; color: var(--text-secondary); font-size: 11px; cursor: pointer; text-align: left; padding: 0; }
-        .logout-btn:hover { color: #ef4444; }
+        .user-name { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+        .logout-btn-premium { 
+          background: rgba(239, 68, 68, 0.1); 
+          border: 1px solid rgba(239, 68, 68, 0.2); 
+          color: #f87171; 
+          font-size: 11px; 
+          font-weight: 600;
+          cursor: pointer; 
+          text-align: left; 
+          padding: 4px 10px; 
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          transition: all 0.3s ease;
+          width: fit-content;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+        .logout-btn-premium:hover { 
+          background: rgba(239, 68, 68, 0.2); 
+          border-color: #ef4444;
+          color: #ef4444;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+        .logout-btn-premium:active { transform: translateY(0); }
+        .logout-icon { display: flex; align-items: center; }
 
         .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; padding: 40px; }
         .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
