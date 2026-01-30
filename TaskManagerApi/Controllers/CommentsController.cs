@@ -30,6 +30,8 @@ namespace TaskManagerApi.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] Comment comment)
         {
+            var resolved = await _taskService.ResolveLegacyIdAsync(comment.TaskId);
+            comment.TaskId = resolved ?? comment.TaskId;
             await _service.CreateAsync(comment);
             return CreatedAtAction(null, new { id = comment.Id }, comment);
         }
