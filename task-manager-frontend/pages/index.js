@@ -19,6 +19,8 @@ export default function Home() {
   const [commentsPage, setCommentsPage] = useState(1)
   const [historyDateFrom, setHistoryDateFrom] = useState('')
   const [historyDateTo, setHistoryDateTo] = useState('')
+  const [commentsDateFrom, setCommentsDateFrom] = useState('')
+  const [commentsDateTo, setCommentsDateTo] = useState('')
   const itemsPerPage = 5
 
   useEffect(() => {
@@ -298,52 +300,98 @@ export default function Home() {
                     </div>
                     <button className="btn-modern btn-primary mt-2" onClick={addComment}>Enviar Comentario</button>
 
-                    <div className="comment-feed mt-4">
-                      {comments.length > 0 ? (
-                        <>
-                          {comments.slice((commentsPage - 1) * itemsPerPage, commentsPage * itemsPerPage).map((c, i) => (
-                            <div key={c._id || c.id || i} className="comment-bubble glass">
-                              <div className="comment-header">
-                                <span className="comment-author">{users.find(u => u.id === c.userId || u._id === c.userId)?.username || 'Usuario'}</span>
-                                <span className="comment-date">{new Date(c.createdAt).toLocaleString()}</span>
-                              </div>
-                              <div className="comment-body">{c.commentText}</div>
-                            </div>
-                          ))}
-
-                          {/* Pagination Controls for Comments */}
-                          {comments.length > itemsPerPage && (
-                            <div className="pagination-bar mt-6">
-                              <button
-                                className="btn-modern btn-secondary btn-sm"
-                                onClick={() => setCommentsPage(p => Math.max(1, p - 1))}
-                                disabled={commentsPage === 1}
-                              >
-                                ← Anterior
-                              </button>
-                              <div className="page-indicator">
-                                {Array.from({ length: Math.ceil(comments.length / itemsPerPage) }).map((_, i) => (
-                                  <button
-                                    key={i}
-                                    className={`page-dot ${commentsPage === i + 1 ? 'active' : ''}`}
-                                    onClick={() => setCommentsPage(i + 1)}
-                                  />
-                                ))}
-                                <span className="page-text">Página {commentsPage} de {Math.ceil(comments.length / itemsPerPage)}</span>
-                              </div>
-                              <button
-                                className="btn-modern btn-secondary btn-sm"
-                                onClick={() => setCommentsPage(p => Math.min(Math.ceil(comments.length / itemsPerPage), p + 1))}
-                                disabled={commentsPage === Math.ceil(comments.length / itemsPerPage)}
-                              >
-                                Siguiente →
-                              </button>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="empty-state">No hay comentarios para esta tarea.</div>
+                    {/* Date Filter for Comments */}
+                    <div className="history-filters mt-4">
+                      <div className="filter-group">
+                        <label>Desde</label>
+                        <input
+                          type="date"
+                          className="modern-input"
+                          value={commentsDateFrom}
+                          onChange={e => { setCommentsDateFrom(e.target.value); setCommentsPage(1); }}
+                        />
+                      </div>
+                      <div className="filter-group">
+                        <label>Hasta</label>
+                        <input
+                          type="date"
+                          className="modern-input"
+                          value={commentsDateTo}
+                          onChange={e => { setCommentsDateTo(e.target.value); setCommentsPage(1); }}
+                        />
+                      </div>
+                      {(commentsDateFrom || commentsDateTo) && (
+                        <button
+                          className="btn-modern btn-secondary btn-sm"
+                          onClick={() => { setCommentsDateFrom(''); setCommentsDateTo(''); setCommentsPage(1); }}
+                        >
+                          Limpiar Filtros
+                        </button>
                       )}
+                    </div>
+
+                    <div className="comment-feed mt-4">
+                      {(() => {
+                        // Apply date filtering
+                        let filteredComments = comments;
+                        if (commentsDateFrom || commentsDateTo) {
+                          filteredComments = comments.filter(c => {
+                            const itemDate = new Date(c.createdAt);
+                            const fromDate = commentsDateFrom ? new Date(commentsDateFrom) : null;
+                            const toDate = commentsDateTo ? new Date(commentsDateTo + 'T23:59:59') : null;
+
+                            if (fromDate && itemDate < fromDate) return false;
+                            if (toDate && itemDate > toDate) return false;
+                            return true;
+                          });
+                        }
+
+                        return filteredComments.length > 0 ? (
+                          <>
+                            {filteredComments.slice((commentsPage - 1) * itemsPerPage, commentsPage * itemsPerPage).map((c, i) => (
+                              <div key={c._id || c.id || i} className="comment-bubble glass">
+                                <div className="comment-header">
+                                  <span className="comment-author">{users.find(u => u.id === c.userId || u._id === c.userId)?.username || 'Usuario'}</span>
+                                  <span className="comment-date">{new Date(c.createdAt).toLocaleString()}</span>
+                                </div>
+                                <div className="comment-body">{c.commentText}</div>
+                              </div>
+                            ))}
+
+                            {/* Pagination Controls for Comments */}
+                            {filteredComments.length > itemsPerPage && (
+                              <div className="pagination-bar mt-6">
+                                <button
+                                  className="btn-modern btn-secondary btn-sm"
+                                  onClick={() => setCommentsPage(p => Math.max(1, p - 1))}
+                                  disabled={commentsPage === 1}
+                                >
+                                  ← Anterior
+                                </button>
+                                <div className="page-indicator">
+                                  {Array.from({ length: Math.ceil(filteredComments.length / itemsPerPage) }).map((_, i) => (
+                                    <button
+                                      key={i}
+                                      className={`page-dot ${commentsPage === i + 1 ? 'active' : ''}`}
+                                      onClick={() => setCommentsPage(i + 1)}
+                                    />
+                                  ))}
+                                  <span className="page-text">Página {commentsPage} de {Math.ceil(filteredComments.length / itemsPerPage)}</span>
+                                </div>
+                                <button
+                                  className="btn-modern btn-secondary btn-sm"
+                                  onClick={() => setCommentsPage(p => Math.min(Math.ceil(filteredComments.length / itemsPerPage), p + 1))}
+                                  disabled={commentsPage === Math.ceil(filteredComments.length / itemsPerPage)}
+                                >
+                                  Siguiente →
+                                </button>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="empty-state">No hay comentarios para esta tarea.</div>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
