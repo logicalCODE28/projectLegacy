@@ -11,6 +11,7 @@ export default function Home() {
   const [currentUser, setCurrentUser] = useState(null)
   const [selectedTask, setSelectedTask] = useState(null)
   const [comments, setComments] = useState([])
+  const [historyItems, setHistoryItems] = useState([])
 
   useEffect(() => {
     refreshAll()
@@ -89,11 +90,11 @@ export default function Home() {
     const raw = document.getElementById('historyTaskId').value; if (!raw) return alert('ID requerido');
     const taskId = resolveTaskId(raw)
     const r = await fetch('/api/history/task/' + taskId);
-    if (r.ok) { const list = await r.json(); setOutput(list.map(h => `${new Date(h.timestamp).toLocaleString()} - ${h.action}\n  Usuario: ${users.find(u => u.id === h.userId || u._id === h.userId)?.username || 'Desconocido'}\n  Antes: ${h.oldValue || '(vacío)'}\n  Después: ${h.newValue || '(vacío)'}`).join('\n---\n')); }
+    if (r.ok) { const list = await r.json(); setHistoryItems(list.reverse()); }
   }
 
   const loadAllHistory = async () => {
-    const r = await fetch('/api/history'); if (r.ok) { const list = await r.json(); setOutput(list.slice(-100).reverse().map(h => `Tarea #${h.taskId} - ${h.action} - ${new Date(h.timestamp).toLocaleDateString()}\n Usuario: ${users.find(u => u.id === h.userId || u._id === h.userId)?.username || 'Desconocido'}`).join('\n---\n')); }
+    const r = await fetch('/api/history'); if (r.ok) { const list = await r.json(); setHistoryItems(list.slice(-100).reverse()); }
   }
 
   // Notifications
@@ -303,7 +304,34 @@ export default function Home() {
                   <button className="btn-modern btn-secondary" onClick={loadHistory}>Ver Historia</button>
                   <button className="btn-modern btn-secondary" onClick={loadAllHistory}>Ver Todo</button>
                 </div>
-                <textarea className="modern-textarea mt-4" readOnly></textarea>
+
+                <div className="history-feed mt-4">
+                  {historyItems.length > 0 ? (
+                    historyItems.map((h, i) => (
+                      <div key={h._id || h.id || i} className="history-card glass">
+                        <div className="history-header">
+                          <div className="history-info">
+                            <span className="history-action">{h.action}</span>
+                            <span className="history-user">por {users.find(u => u.id === h.userId || u._id === h.userId)?.username || 'Desconocido'}</span>
+                          </div>
+                          <span className="history-date">{new Date(h.timestamp).toLocaleString()}</span>
+                        </div>
+                        <div className="history-details">
+                          <div className="detail-item">
+                            <span className="label">Anterior:</span>
+                            <span className="value old">{h.oldValue || '(vacío)'}</span>
+                          </div>
+                          <div className="detail-item">
+                            <span className="label">Nuevo:</span>
+                            <span className="value new">{h.newValue || '(vacío)'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="empty-state">No hay registros de historial disponibles.</div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -418,6 +446,20 @@ export default function Home() {
         .comment-date { font-size: 11px; color: var(--text-secondary); }
         .comment-body { font-size: 14px; line-height: 1.5; color: var(--text-primary); }
         .empty-state { text-align: center; padding: 40px; color: var(--text-secondary); font-style: italic; }
+
+        .history-feed { display: flex; flex-direction: column; gap: 12px; max-height: 500px; overflow-y: auto; padding-right: 8px; }
+        .history-card { padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border); }
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
+        .history-info { display: flex; flex-direction: column; }
+        .history-action { font-weight: 700; font-size: 13px; color: var(--accent-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .history-user { font-size: 12px; color: var(--text-secondary); }
+        .history-date { font-size: 11px; color: var(--text-secondary); }
+        .history-details { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .detail-item { display: flex; flex-direction: column; gap: 4px; }
+        .detail-item .label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; }
+        .detail-item .value { font-size: 13px; padding: 8px; border-radius: 6px; background: rgba(0,0,0,0.2); }
+        .detail-item .value.old { color: #f87171; border-left: 3px solid #f87171; }
+        .detail-item .value.new { color: #4ade80; border-left: 3px solid #4ade80; }
       `}</style>
     </div>
   )
